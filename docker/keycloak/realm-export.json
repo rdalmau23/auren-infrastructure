@@ -1,0 +1,125 @@
+{
+  "realm": "auren",
+  "enabled": true,
+  "displayName": "Auren - Salud Mental",
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": true,
+  "permanentLockout": false,
+  "maxFailureWaitSeconds": 900,
+  "minimumQuickLoginWaitSeconds": 60,
+  "waitIncrementSeconds": 60,
+  "quickLoginCheckMilliSeconds": 1000,
+  "maxDeltaTimeSeconds": 43200,
+  "failureFactor": 5,
+  "defaultSignatureAlgorithm": "RS256",
+  "accessTokenLifespan": 300,
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 36000,
+  "roles": {
+    "realm": [
+      { "name": "SUPER_ADMIN", "description": "Full system access" },
+      { "name": "CENTER_ADMIN", "description": "Center-level administration" },
+      { "name": "PSYCHIATRIST", "description": "Psychiatrist role" },
+      { "name": "PSYCHOLOGIST", "description": "Psychologist role" },
+      { "name": "NURSE", "description": "Nurse role" },
+      { "name": "SOCIAL_WORKER", "description": "Social worker role" },
+      { "name": "PATIENT", "description": "Patient portal access" },
+      { "name": "FAMILY_MEMBER", "description": "Family member limited access" }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "auren-cms",
+      "name": "Auren CMS",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "redirectUris": ["http://localhost:3000/*"],
+      "webOrigins": ["http://localhost:3000"],
+      "protocol": "openid-connect",
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      }
+    },
+    {
+      "clientId": "auren-mobile",
+      "name": "Auren Mobile",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "redirectUris": ["auren://callback/*", "exp://*/--/*"],
+      "protocol": "openid-connect",
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      }
+    },
+    {
+      "clientId": "auren-api",
+      "name": "Auren Backend API",
+      "enabled": true,
+      "publicClient": false,
+      "bearerOnly": true,
+      "protocol": "openid-connect"
+    }
+  ],
+  "users": [
+    {
+      "username": "admin@auren.dev",
+      "email": "admin@auren.dev",
+      "firstName": "Admin",
+      "lastName": "Auren",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "admin123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["SUPER_ADMIN"]
+    },
+    {
+      "username": "psych@auren.dev",
+      "email": "psych@auren.dev",
+      "firstName": "Dr. María",
+      "lastName": "García",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "psych123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["PSYCHIATRIST"]
+    },
+    {
+      "username": "patient@auren.dev",
+      "email": "patient@auren.dev",
+      "firstName": "Carlos",
+      "lastName": "López",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "patient123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["PATIENT"]
+    }
+  ],
+  "internationalizationEnabled": true,
+  "supportedLocales": ["es", "ca", "en"],
+  "defaultLocale": "es"
+}

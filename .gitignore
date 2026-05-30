@@ -1,0 +1,17 @@
+# Docker and Infrastructure
+.env
+.env.*
+*.log
+
+# Data volumes
+docker/postgres_data/
+docker/redis_data/
+postgres_data/
+redis_data/
+
+# macOS
+.DS_Store
+
+# IDEs
+.idea/
+.vscode/
