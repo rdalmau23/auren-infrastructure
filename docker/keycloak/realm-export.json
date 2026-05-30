@@ -93,6 +93,7 @@
       "lastName": "García",
       "enabled": true,
       "emailVerified": true,
+      "requiredActions": ["CONFIGURE_TOTP"],
       "credentials": [
         {
           "type": "password",
@@ -109,10 +110,45 @@
       "lastName": "López",
       "enabled": true,
       "emailVerified": true,
+      "requiredActions": ["CONFIGURE_TOTP"],
       "credentials": [
         {
           "type": "password",
           "value": "patient123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["PATIENT"]
+    },
+    {
+      "username": "admin_profesional@auren.dev",
+      "email": "admin_profesional@auren.dev",
+      "firstName": "Admin",
+      "lastName": "Profesional",
+      "enabled": true,
+      "emailVerified": true,
+      "requiredActions": [],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "admin123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["CENTER_ADMIN"]
+    },
+    {
+      "username": "admin_paciente@auren.dev",
+      "email": "admin_paciente@auren.dev",
+      "firstName": "Admin",
+      "lastName": "Paciente",
+      "enabled": true,
+      "emailVerified": true,
+      "requiredActions": [],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "admin123",
           "temporary": false
         }
       ],

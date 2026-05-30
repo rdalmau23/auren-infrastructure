@@ -3,6 +3,16 @@
 .env.*
 *.log
 
+# Tokens and credentials
+kc_token.txt
+token.json
+*.pem
+
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/
 # Data volumes
 docker/postgres_data/
 docker/redis_data/
