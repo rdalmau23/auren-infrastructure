@@ -1,0 +1,138 @@
+version: '3.8'
+
+# ----------------------------------------------------------------------
+# AUREN - Entorno On-Premise (All-in-One)
+# Este entorno levanta toda la infraestructura clínica en un único servidor
+# sin necesidad de dependencias Cloud. Caddy actúa como proxy reverso.
+# ----------------------------------------------------------------------
+
+services:
+  # -------------------------
+  # INGRESS / PROXY REVERSO
+  # -------------------------
+  proxy:
+    image: caddy:2-alpine
+    container_name: auren-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      # Si pasas un dominio real en esta variable, Caddy generará Let's Encrypt automáticamente
+      - DOMAIN=${DOMAIN:-localhost}
+    command: caddy reverse-proxy --from $$DOMAIN --to cms:3000
+    # En un entorno real se usaría un Caddyfile montado para balancear las distintas rutas
+    # ej. api.hospital.com -> backend:8080, auth.hospital.com -> keycloak:8180
+    networks:
+      - auren_net
+    depends_on:
+      - cms
+
+  # -------------------------
+  # BASES DE DATOS & CACHÉ
+  # -------------------------
+  db:
+    image: postgres:15-alpine
+    container_name: auren-postgres-prod
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-auren_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-auren_secure_password}
+      POSTGRES_DB: auren
+    volumes:
+      - pgdata_prod:/var/lib/postgresql/data
+    networks:
+      - auren_net
+
+  redis:
+    image: redis:7-alpine
+    container_name: auren-redis-prod
+    restart: unless-stopped
+    command: redis-server --requirepass ${REDIS_PASSWORD:-auren_redis_prod}
+    networks:
+      - auren_net
+
+  # -------------------------
+  # IDENTITY & ACCESS (IAM)
+  # -------------------------
+  keycloak:
+    image: quay.io/keycloak/keycloak:25.0
+    container_name: auren-keycloak-prod
+    restart: unless-stopped
+    command: start
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://db:5432/auren
+      KC_DB_USERNAME: ${DB_USER:-auren_user}
+      KC_DB_PASSWORD: ${DB_PASSWORD:-auren_secure_password}
+      KC_HOSTNAME: auth.${DOMAIN:-localhost}
+      KC_PROXY: edge
+      KEYCLOAK_ADMIN: ${KC_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KC_PASSWORD:-admin}
+    depends_on:
+      - db
+    networks:
+      - auren_net
+
+  # -------------------------
+  # MICROSERVICIOS AUREN
+  # -------------------------
+  backend:
+    build:
+      context: ../../auren-backend
+      dockerfile: Dockerfile
+    container_name: auren-backend-prod
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/auren
+      SPRING_DATASOURCE_USERNAME: ${DB_USER:-auren_user}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-auren_secure_password}
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PASSWORD: ${REDIS_PASSWORD:-auren_redis_prod}
+      KEYCLOAK_ISSUER_URI: https://auth.${DOMAIN:-localhost}/realms/auren
+      KEYCLOAK_JWK_URI: https://auth.${DOMAIN:-localhost}/realms/auren/protocol/openid-connect/certs
+      KEYCLOAK_SERVER_URL: https://auth.${DOMAIN:-localhost}
+    depends_on:
+      - db
+      - redis
+      - keycloak
+    networks:
+      - auren_net
+
+  analytics:
+    build:
+      context: ../../auren-analytics
+      dockerfile: Dockerfile
+    container_name: auren-analytics-prod
+    restart: unless-stopped
+    environment:
+      DEFAULT_DATABASE_URL: postgresql://${DB_USER:-auren_user}:${DB_PASSWORD:-auren_secure_password}@db:5432/auren
+      KEYCLOAK_ISSUER: https://auth.${DOMAIN:-localhost}/realms/auren
+    depends_on:
+      - db
+    networks:
+      - auren_net
+
+  cms:
+    build:
+      context: ../../auren-cms
+      dockerfile: Dockerfile
+    container_name: auren-cms-prod
+    restart: unless-stopped
+    environment:
+      NEXTAUTH_URL: https://${DOMAIN:-localhost}
+      NEXT_PUBLIC_API_URL: https://api.${DOMAIN:-localhost}/api
+      NEXT_PUBLIC_ANALYTICS_URL: https://analytics.${DOMAIN:-localhost}
+      NEXT_PUBLIC_KEYCLOAK_URL: https://auth.${DOMAIN:-localhost}
+      KEYCLOAK_ID: auren-cms
+      KEYCLOAK_ISSUER: https://auth.${DOMAIN:-localhost}/realms/auren
+    networks:
+      - auren_net
+
+networks:
+  auren_net:
+    driver: bridge
+
+volumes:
+  pgdata_prod:
