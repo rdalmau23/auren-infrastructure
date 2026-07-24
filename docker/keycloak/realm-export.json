@@ -24,6 +24,10 @@
     "realm": [
       { "name": "SUPER_ADMIN", "description": "Full system access" },
       { "name": "CENTER_ADMIN", "description": "Center-level administration" },
+      { "name": "PRINCIPAL_INVESTIGATOR", "description": "Principal Investigator" },
+      { "name": "CLINICAL_SPECIALIST", "description": "Clinical Specialist (Doctor, Biologist, etc.)" },
+      { "name": "STUDY_COORDINATOR", "description": "Study Coordinator" },
+      { "name": "DATA_MANAGER", "description": "Data Manager" },
       { "name": "PSYCHIATRIST", "description": "Psychiatrist role" },
       { "name": "PSYCHOLOGIST", "description": "Psychologist role" },
       { "name": "NURSE", "description": "Nurse role" },
@@ -101,7 +105,7 @@
           "temporary": false
         }
       ],
-      "realmRoles": ["PSYCHIATRIST"]
+      "realmRoles": ["PSYCHIATRIST", "CLINICAL_SPECIALIST"]
     },
     {
       "username": "patient@auren.dev",
