@@ -65,7 +65,7 @@ resource "aws_lb_target_group" "keycloak" {
 
   health_check {
     path = "/health/ready"
-    port = "8180"
+    port = "9000"
   }
 }
 
@@ -225,6 +225,10 @@ resource "aws_ecs_task_definition" "keycloak" {
         {
           containerPort = 8180
           protocol      = "tcp"
+        },
+        {
+          containerPort = 9000
+          protocol      = "tcp"
         }
       ]
       environment = [
@@ -234,6 +238,9 @@ resource "aws_ecs_task_definition" "keycloak" {
         { name = "KC_DB_PASSWORD", value = var.db_password },
         { name = "KC_PROXY", value = "edge" },
         { name = "KC_HOSTNAME_STRICT", value = "false" },
+        { name = "KC_HTTP_PORT", value = "8180" },
+        { name = "KC_HEALTH_ENABLED", value = "true" },
+        { name = "KC_METRICS_ENABLED", value = "true" },
         { name = "KEYCLOAK_ADMIN", value = "admin" },
         { name = "KEYCLOAK_ADMIN_PASSWORD", value = var.keycloak_admin_password }
       ]
