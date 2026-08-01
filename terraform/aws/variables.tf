@@ -35,7 +35,7 @@ variable "keycloak_admin_password" {
 }
 
 variable "github_org" {
-  description = "El usuario u organización de GitHub (ej. rdalmau)"
+  description = "El usuario u organización de GitHub"
   type        = string
-  default     = "rdalmau"
+  default     = "rdalmau23"
 }
