@@ -1,0 +1,43 @@
+name: Deploy Keycloak to AWS ECS
+
+on:
+  workflow_dispatch:
+
+env:
+  AWS_REGION: eu-west-1
+  AWS_ROLE_ARN: arn:aws:iam::423535493684:role/auren-preprod-github-actions-role
+  ECR_REGISTRY: 423535493684.dkr.ecr.eu-west-1.amazonaws.com
+
+permissions:
+  id-token: write # Required for AWS OIDC authentication
+  contents: read
+
+jobs:
+  deploy:
+    name: Build and Deploy Keycloak
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and Push Keycloak Image
+        run: |
+          # The Dockerfile is in docker/keycloak
+          cd docker/keycloak
+          docker build --platform linux/amd64 -t ${{ env.ECR_REGISTRY }}/auren-preprod-keycloak:latest .
+          docker push ${{ env.ECR_REGISTRY }}/auren-preprod-keycloak:latest
+
+      - name: Update ECS Service
+        run: |
+          aws ecs update-service --cluster auren-preprod-cluster --service auren-preprod-keycloak-service --force-new-deployment --region ${{ env.AWS_REGION }}
