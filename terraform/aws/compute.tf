@@ -52,6 +52,7 @@ resource "aws_lb_target_group" "cms" {
   health_check {
     path = "/"
     port = "3000"
+    matcher = "200-399"
   }
 }
 
