@@ -112,7 +112,7 @@ resource "aws_lb_listener_rule" "keycloak_rule" {
 
   condition {
     path_pattern {
-      values = ["/auth/*", "/realms/*", "/resources/*"]
+      values = ["/auth/*", "/realms/*", "/resources/*", "/admin/*", "/js/*"]
     }
   }
 }
@@ -195,7 +195,11 @@ resource "aws_ecs_task_definition" "cms" {
       ]
       environment = [
         { name = "NEXT_PUBLIC_API_URL", value = "http://${aws_lb.main.dns_name}/api/v1" },
-        { name = "KEYCLOAK_URL", value = "http://${aws_lb.main.dns_name}" }
+        { name = "KEYCLOAK_URL", value = "http://${aws_lb.main.dns_name}" },
+        { name = "KEYCLOAK_ISSUER", value = "http://${aws_lb.main.dns_name}/realms/auren" },
+        { name = "KEYCLOAK_ID", value = "auren-cms" },
+        { name = "KEYCLOAK_SECRET", value = "dummy" },
+        { name = "NEXTAUTH_URL", value = "http://${aws_lb.main.dns_name}" }
       ]
       logConfiguration = {
         logDriver = "awslogs"
