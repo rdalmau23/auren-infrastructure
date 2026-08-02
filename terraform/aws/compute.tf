@@ -65,9 +65,11 @@ resource "aws_lb_target_group" "keycloak" {
   target_type = "ip"
 
   health_check {
-    path    = "/health/ready"
-    port    = "9000"
-    matcher = "200-499"
+    path                = "/health/ready"
+    port                = "9000"
+    matcher             = "200-499"
+    interval            = 15
+    healthy_threshold   = 2
   }
 }
 
@@ -199,7 +201,8 @@ resource "aws_ecs_task_definition" "cms" {
         { name = "KEYCLOAK_ISSUER", value = "http://${aws_lb.main.dns_name}/realms/auren" },
         { name = "KEYCLOAK_ID", value = "auren-cms" },
         { name = "KEYCLOAK_SECRET", value = "dummy" },
-        { name = "NEXTAUTH_URL", value = "http://${aws_lb.main.dns_name}" }
+        { name = "NEXTAUTH_URL", value = "http://${aws_lb.main.dns_name}" },
+        { name = "NEXTAUTH_SECRET", value = "auren-preprod-nextauth-secret-change-in-prod" }
       ]
       logConfiguration = {
         logDriver = "awslogs"
@@ -310,7 +313,7 @@ resource "aws_ecs_service" "keycloak" {
   task_definition = aws_ecs_task_definition.keycloak.arn
   desired_count   = 1
   launch_type     = "FARGATE"
-  health_check_grace_period_seconds = 120
+  health_check_grace_period_seconds = 300
 
   network_configuration {
     subnets         = [aws_subnet.private_1.id, aws_subnet.private_2.id]
