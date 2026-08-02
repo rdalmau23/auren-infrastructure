@@ -65,8 +65,8 @@ resource "aws_lb_target_group" "keycloak" {
   target_type = "ip"
 
   health_check {
-    path    = "/"
-    port    = "8180"
+    path    = "/health/ready"
+    port    = "9000"
     matcher = "200-499"
   }
 }
@@ -242,7 +242,8 @@ resource "aws_ecs_task_definition" "keycloak" {
         { name = "KC_DB_URL", value = "jdbc:postgresql://${aws_db_instance.postgres.endpoint}/${aws_db_instance.postgres.db_name}" },
         { name = "KC_DB_USERNAME", value = aws_db_instance.postgres.username },
         { name = "KC_DB_PASSWORD", value = var.db_password },
-        { name = "KC_PROXY", value = "edge" },
+        { name = "KC_PROXY_HEADERS", value = "xforwarded" },
+        { name = "KC_HTTP_ENABLED", value = "true" },
         { name = "KC_HOSTNAME_STRICT", value = "false" },
         { name = "KC_HTTP_PORT", value = "8180" },
         { name = "KC_HEALTH_ENABLED", value = "true" },
