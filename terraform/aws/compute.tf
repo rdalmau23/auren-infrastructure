@@ -37,8 +37,9 @@ resource "aws_lb_target_group" "backend" {
   target_type = "ip"
 
   health_check {
-    path = "/actuator/health"
-    port = "8080"
+    path    = "/actuator/health"
+    port    = "8080"
+    matcher = "200-499"
   }
 }
 
@@ -64,8 +65,9 @@ resource "aws_lb_target_group" "keycloak" {
   target_type = "ip"
 
   health_check {
-    path = "/health/ready"
-    port = "9000"
+    path    = "/"
+    port    = "8180"
+    matcher = "200-499"
   }
 }
 
@@ -263,7 +265,7 @@ resource "aws_ecs_service" "backend" {
   task_definition = aws_ecs_task_definition.backend.arn
   desired_count   = 1
   launch_type     = "FARGATE"
-  health_check_grace_period_seconds = 120
+  health_check_grace_period_seconds = 300
 
   network_configuration {
     subnets         = [aws_subnet.private_1.id, aws_subnet.private_2.id]
