@@ -56,7 +56,8 @@ resource "aws_iam_policy" "github_actions_ecs_deploy" {
         Resource = [
           "arn:aws:ecs:${var.aws_region}:*:service/${var.project_name}-${var.environment}-cluster/${var.project_name}-${var.environment}-backend-service",
           "arn:aws:ecs:${var.aws_region}:*:service/${var.project_name}-${var.environment}-cluster/${var.project_name}-${var.environment}-cms-service",
-          "arn:aws:ecs:${var.aws_region}:*:service/${var.project_name}-${var.environment}-cluster/${var.project_name}-${var.environment}-keycloak-service"
+          "arn:aws:ecs:${var.aws_region}:*:service/${var.project_name}-${var.environment}-cluster/${var.project_name}-${var.environment}-keycloak-service",
+          "arn:aws:ecs:${var.aws_region}:*:service/${var.project_name}-${var.environment}-cluster/${var.project_name}-${var.environment}-analytics-service"
         ]
       }
     ]
