@@ -27,3 +27,8 @@ output "ecr_repository_keycloak" {
   description = "The ECR repository URL for Keycloak"
   value       = aws_ecr_repository.keycloak.repository_url
 }
+
+output "ecr_repository_analytics" {
+  description = "The ECR repository URL for Analytics"
+  value       = aws_ecr_repository.analytics.repository_url
+}

@@ -12,6 +12,7 @@ ECR_REGISTRY="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
 ECR_BACKEND="${ECR_REGISTRY}/${PROJECT}-${ENV}-backend"
 ECR_CMS="${ECR_REGISTRY}/${PROJECT}-${ENV}-cms"
 ECR_KEYCLOAK="${ECR_REGISTRY}/${PROJECT}-${ENV}-keycloak"
+ECR_ANALYTICS="${ECR_REGISTRY}/${PROJECT}-${ENV}-analytics"
 
 echo "🔐 Iniciando sesión en AWS ECR..."
 aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
@@ -23,6 +24,11 @@ echo "🚀 Construyendo y subiendo Backend..."
 cd ../../auren-backend
 docker build --platform linux/amd64 -t $ECR_BACKEND:latest .
 docker push $ECR_BACKEND:latest
+
+echo "🚀 Construyendo y subiendo Analytics..."
+cd ../auren-analytics
+docker build --platform linux/amd64 -t $ECR_ANALYTICS:latest .
+docker push $ECR_ANALYTICS:latest
 
 echo "🚀 Construyendo y subiendo CMS..."
 cd ../auren-cms
@@ -38,6 +44,7 @@ docker push $ECR_KEYCLOAK:latest
 
 echo "🔄 Avisando a los servidores (ECS) para que descarguen y arranquen las nuevas imágenes..."
 aws ecs update-service --cluster ${PROJECT}-${ENV}-cluster --service ${PROJECT}-${ENV}-backend-service --force-new-deployment --region $AWS_REGION > /dev/null
+aws ecs update-service --cluster ${PROJECT}-${ENV}-cluster --service ${PROJECT}-${ENV}-analytics-service --force-new-deployment --region $AWS_REGION > /dev/null
 aws ecs update-service --cluster ${PROJECT}-${ENV}-cluster --service ${PROJECT}-${ENV}-cms-service --force-new-deployment --region $AWS_REGION > /dev/null
 aws ecs update-service --cluster ${PROJECT}-${ENV}-cluster --service ${PROJECT}-${ENV}-keycloak-service --force-new-deployment --region $AWS_REGION > /dev/null
 
