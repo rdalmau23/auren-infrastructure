@@ -2,7 +2,7 @@
   "realm": "auren",
   "enabled": true,
   "displayName": "Auren - Salud Mental",
-  "sslRequired": "external",
+  "sslRequired": "none",
   "registrationAllowed": false,
   "loginWithEmailAllowed": true,
   "duplicateEmailsAllowed": false,
