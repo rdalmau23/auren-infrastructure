@@ -48,26 +48,8 @@ aws ecs update-service --cluster ${PROJECT}-${ENV}-cluster --service ${PROJECT}-
 aws ecs update-service --cluster ${PROJECT}-${ENV}-cluster --service ${PROJECT}-${ENV}-cms-service --force-new-deployment --region $AWS_REGION > /dev/null
 aws ecs update-service --cluster ${PROJECT}-${ENV}-cluster --service ${PROJECT}-${ENV}-keycloak-service --force-new-deployment --region $AWS_REGION > /dev/null
 
-echo "⏳ Esperando a que Keycloak esté disponible para configurar la seguridad (puede tardar 2-3 minutos)..."
+echo "⏳ Despliegue lanzado en ECS. Los contenedores tardarán unos minutos en arrancar."
 ALB_DNS=$(aws elbv2 describe-load-balancers --names ${PROJECT}-${ENV}-alb --region $AWS_REGION --query 'LoadBalancers[0].DNSName' --output text)
-ALB_URL="http://$ALB_DNS"
 
-for i in {1..40}; do
-  if curl -s -I "$ALB_URL/admin/" | grep -q "302 Found\|200 OK"; then
-    echo "✅ Keycloak está online. Configurando Redirect URIs en el CMS..."
-    TOKEN=$(curl -s -d "client_id=admin-cli" -d "username=superadmin" -d "password=Rdc04123@" -d "grant_type=password" "$ALB_URL/realms/master/protocol/openid-connect/token" | grep -o '"access_token":"[^"]*' | grep -o '[^"]*$')
-    if [ ! -z "$TOKEN" ]; then
-      CLIENT_UUID=$(curl -s -H "Authorization: Bearer $TOKEN" "$ALB_URL/admin/realms/auren/clients?clientId=auren-cms" | grep -o '"id":"[^"]*' | head -n 1 | grep -o '[^"]*$')
-      if [ ! -z "$CLIENT_UUID" ]; then
-        CLIENT_JSON=$(curl -s -H "Authorization: Bearer $TOKEN" "$ALB_URL/admin/realms/auren/clients/$CLIENT_UUID")
-        MODIFIED_JSON=$(echo "$CLIENT_JSON" | sed "s/\"redirectUris\":\[[^]]*\]/\"redirectUris\":\[\"http:\/\/localhost:3000\/*\",\"$ALB_URL\/*\"\]/")
-        curl -s -o /dev/null -X PUT -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d "$MODIFIED_JSON" "$ALB_URL/admin/realms/auren/clients/$CLIENT_UUID"
-        echo "✅ Configuración de Keycloak parcheada automáticamente para $ALB_URL"
-      fi
-    fi
-    break
-  fi
-  sleep 10
-done
-
-echo "✅ ¡Despliegue completamente automatizado finalizado! La plataforma está lista."
+echo "✅ ¡Despliegue completamente automatizado finalizado!"
+echo "🌐 URL de acceso al CMS: http://$ALB_DNS"
