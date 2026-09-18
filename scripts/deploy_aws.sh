@@ -48,4 +48,8 @@ aws ecs update-service --cluster ${PROJECT}-${ENV}-cluster --service ${PROJECT}-
 aws ecs update-service --cluster ${PROJECT}-${ENV}-cluster --service ${PROJECT}-${ENV}-cms-service --force-new-deployment --region $AWS_REGION > /dev/null
 aws ecs update-service --cluster ${PROJECT}-${ENV}-cluster --service ${PROJECT}-${ENV}-keycloak-service --force-new-deployment --region $AWS_REGION > /dev/null
 
-echo "✅ ¡Despliegue completado! En 1-2 minutos la web estará disponible en el balanceador."
+echo "⏳ Despliegue lanzado en ECS. Los contenedores tardarán unos minutos en arrancar."
+ALB_DNS=$(aws elbv2 describe-load-balancers --names ${PROJECT}-${ENV}-alb --region $AWS_REGION --query 'LoadBalancers[0].DNSName' --output text)
+
+echo "✅ ¡Despliegue completamente automatizado finalizado!"
+echo "🌐 URL de acceso al CMS: http://$ALB_DNS"

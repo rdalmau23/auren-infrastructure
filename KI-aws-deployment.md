@@ -1,46 +1,46 @@
-# 🧠 Conocimiento Base: Despliegue en AWS y Resolución de Errores
+# Knowledge Base: AWS Deployment & Troubleshooting
 
-Este documento recopila los problemas encontrados durante la migración de local a AWS ECS y cómo se solucionaron, para servir como referencia futura.
+This document captures the issues encountered during the migration from local Docker to AWS ECS and how each was resolved, serving as a reference for future deployments.
 
-## 1. Error 401 Unauthorized en el Backend (JWT Validation)
-**Problema:** Al desplegar en AWS, las peticiones del CMS al Backend devolvían `401 Unauthorized` a pesar de enviar el token correcto. Además, los logs del backend mostraban `Connection refused`.
-**Causa:** Spring Security estaba intentando validar la firma del token conectándose a `http://localhost:8180` (valor por defecto en `application.yml`) porque no recibía correctamente las variables de entorno de Keycloak. El token había sido emitido por el dominio del ALB de AWS, por lo que el `issuer` no coincidía, y el backend no podía descargar las claves públicas (JWKS).
-**Solución:** 
-Se inyectaron de forma explícita en `compute.tf` las variables necesarias para el backend:
+## 1. 401 Unauthorized on the Backend (JWT Validation)
+**Problem:** After deploying to AWS, requests from the CMS to the Backend returned `401 Unauthorized` despite sending a valid token. Backend logs showed `Connection refused`.
+**Root Cause:** Spring Security was attempting to validate the token signature by connecting to `http://localhost:8180` (the default value in `application.yml`) because it was not receiving the Keycloak environment variables correctly. The token had been issued by the AWS ALB domain, so the `issuer` claim did not match, and the backend could not download the public keys (JWKS).
+**Fix:** 
+The required environment variables were explicitly injected into the backend task definition in `compute.tf`:
 ```hcl
 { name = "KEYCLOAK_ISSUER_URI", value = "http://${aws_lb.main.dns_name}/realms/auren" },
 { name = "KEYCLOAK_JWK_URI", value = "http://${aws_lb.main.dns_name}/realms/auren/protocol/openid-connect/certs" }
 ```
 
-## 2. Errores de CORS (Cross-Origin Resource Sharing)
-**Problema:** Peticiones bloqueadas por política CORS en el navegador.
-**Causa:** El backend (Spring Boot) y FastAPI (Analytics) no tenían el dominio del ALB en su lista de orígenes permitidos.
-**Solución:** Se añadió la variable `CORS_ORIGINS` en `compute.tf` para incluir el DNS del ALB y propagarla a todos los contenedores:
+## 2. CORS Errors (Cross-Origin Resource Sharing)
+**Problem:** Browser requests were blocked by CORS policy.
+**Root Cause:** The backend (Spring Boot) and FastAPI (Analytics) did not have the ALB domain in their list of allowed origins.
+**Fix:** A `CORS_ORIGINS` environment variable was added in `compute.tf` to include the ALB DNS and propagated to all containers:
 ```hcl
 { name = "CORS_ORIGINS", value = "http://${aws_lb.main.dns_name},http://localhost:3000" }
 ```
 
-## 3. Bucle infinito de redirecciones en el Login de Keycloak
-**Problema:** Al acceder a la consola de administración de Keycloak, el navegador entraba en un bucle infinito o daba error de conexión al hacer logout.
-**Causa:** El proxy de AWS ALB modifica las cabeceras. Keycloak necesita saber que está detrás de un proxy (`X-Forwarded-For`, etc.) para generar las URLs correctamente.
-**Solución:** Se configuró Keycloak en `compute.tf` con:
+## 3. Infinite Redirect Loop on Keycloak Login
+**Problem:** When accessing the Keycloak admin console, the browser entered an infinite redirect loop or threw a connection error on logout.
+**Root Cause:** The AWS ALB proxy modifies request headers. Keycloak needs to know it is behind a reverse proxy (`X-Forwarded-For`, etc.) to generate URLs correctly.
+**Fix:** Keycloak was configured in `compute.tf` with the appropriate proxy settings:
 ```hcl
 { name = "KC_PROXY_HEADERS", value = "xforwarded" },
 { name = "KC_HOSTNAME_STRICT", value = "false" }
 ```
 
-## 4. Despliegue de Analytics (Python/FastAPI)
-**Problema:** El CMS daba error al cargar las gráficas porque intentaba acceder a `localhost:8001`. El servicio de analytics no estaba en Terraform.
-**Solución:** 
-1. Se creó toda la infraestructura en Terraform (ECR, Target Group, ECS Task, ECS Service).
-2. Se enrutó el tráfico en el ALB: `/v1/analytics/*`, `/v1/observations/*`, `/v1/copilot/*` se dirigen al contenedor de Python (prioridad 75, antes que la regla comodín del backend).
-3. Se actualizó el cliente en el CMS (`analytics-client.ts`) para usar rutas relativas si está en el navegador, delegando el enrutamiento al ALB.
-4. Se añadieron `PyJWT` y `cryptography` a `requirements.txt` ya que faltaban para validar tokens.
+## 4. Analytics Service Deployment (Python/FastAPI)
+**Problem:** The CMS threw errors when loading charts because it was attempting to reach `localhost:8001`. The analytics service had not been provisioned in Terraform.
+**Fix:** 
+1. Full infrastructure was created in Terraform (ECR repository, Target Group, ECS Task Definition, ECS Service).
+2. Traffic was routed at the ALB: `/v1/analytics/*`, `/v1/observations/*`, `/v1/copilot/*` are directed to the Python container (priority 75, evaluated before the backend wildcard rule).
+3. The CMS client (`analytics-client.ts`) was updated to use relative paths when running in the browser, delegating routing to the ALB.
+4. `PyJWT` and `cryptography` were added to `requirements.txt` as they were missing for token validation.
 
-## 5. Prioridad de Reglas en el ALB (Routing)
-**Problema potencial:** Colisión de rutas (ej. `/api/auth/*` del CMS vs `/api/*` del Backend).
-**Solución:** Se establecieron prioridades estrictas en los `aws_lb_listener_rule`:
-- Prioridad 50: `NextAuth` del CMS (`/api/auth/*`) -> Va al CMS
-- Prioridad 75: `Analytics` (`/v1/analytics/*`, etc.) -> Va a Python
-- Prioridad 100: `Backend` (`/api/*`, `/ws/*`) -> Va a Spring Boot Java
-- Prioridad 200: `Keycloak` (`/auth/*`, `/realms/*`, etc.) -> Va a Keycloak
+## 5. ALB Listener Rule Priority (Routing)
+**Potential Problem:** Path collision between overlapping routes (e.g., `/api/auth/*` for CMS vs `/api/*` for Backend).
+**Fix:** Strict priorities were established in the `aws_lb_listener_rule` resources:
+- Priority 50: CMS `NextAuth` (`/api/auth/*`) → routes to CMS
+- Priority 75: `Analytics` (`/v1/analytics/*`, etc.) → routes to Python
+- Priority 100: `Backend` (`/api/*`, `/ws/*`) → routes to Spring Boot Java
+- Priority 200: `Keycloak` (`/auth/*`, `/realms/*`, etc.) → routes to Keycloak

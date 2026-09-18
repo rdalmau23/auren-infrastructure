@@ -2,21 +2,25 @@
 resource "aws_ecr_repository" "backend" {
   name                 = "${var.project_name}-${var.environment}-backend"
   image_tag_mutability = "MUTABLE"
+  force_delete         = true
 }
 
 resource "aws_ecr_repository" "cms" {
   name                 = "${var.project_name}-${var.environment}-cms"
   image_tag_mutability = "MUTABLE"
+  force_delete         = true
 }
 
 resource "aws_ecr_repository" "keycloak" {
   name                 = "${var.project_name}-${var.environment}-keycloak"
   image_tag_mutability = "MUTABLE"
+  force_delete         = true
 }
 
 resource "aws_ecr_repository" "analytics" {
   name                 = "${var.project_name}-${var.environment}-analytics"
   image_tag_mutability = "MUTABLE"
+  force_delete         = true
 }
 
 # ECS Cluster
